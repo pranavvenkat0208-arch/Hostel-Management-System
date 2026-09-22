@@ -6,7 +6,7 @@ const { Resident } = require('../models/Resident');
 const SEED_PASSWORD = 'Password123';
 
 const adminSeeds = [
-  { name: 'Indira Rao', email: 'indira.rao@hostel.test', phone: '9800000005' },
+  { name: 'Indira Rao', email: 'indira@hostel.test', phone: '9800000005' },
 ];
 
 const staffSeeds = [
