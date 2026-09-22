@@ -45,7 +45,7 @@ export function NotificationsPage() {
               <Spinner />
             </div>
           ) : notifications.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-slate-400">Nothing here yet — you'll see updates on rooms, maintenance and billing as they happen.</p>
+            <p className="px-5 py-10 text-center text-sm text-slate-400">Nothing here yet. Updates on rooms, maintenance and billing will show up here.</p>
           ) : (
             <ul>
               {notifications.map((notification) => {

@@ -2,11 +2,11 @@ const { Allocation } = require('../models/Allocation');
 const { Room } = require('../models/Room');
 const { Resident } = require('../models/Resident');
 const { ApiError } = require('../utils/ApiError');
-const { notifyUser } = require('../services/notificationService');
+const { notifyUser, notifyRole } = require('../services/notificationService');
 const { sendEmail } = require('../services/emailService');
+const { html } = require('../utils/html');
 
-// Shared by check-in and room-change — both end with the resident newly
-// settled into a room, so both should tell them the same way.
+// Used by both check-in and room change.
 function announceRoomAssignment(resident, room, checkInDate) {
   notifyUser({
     recipient: resident.user,
@@ -19,7 +19,37 @@ function announceRoomAssignment(resident, room, checkInDate) {
   sendEmail({
     to: resident.email,
     subject: 'Room Assignment Confirmation',
-    html: `<p>Hi ${resident.name},</p><p>You have been checked into <b>Room ${room.roomNumber}</b> (${room.type}), effective ${checkInDate.toLocaleDateString()}.</p><p>Monthly rent: ₹${room.monthlyRent}.</p>`,
+    html: html`<p>Hi ${resident.name},</p><p>You have been checked into <b>Room ${room.roomNumber}</b> (${room.type}), effective ${checkInDate.toLocaleDateString()}.</p><p>Monthly rent: ₹${room.monthlyRent}.</p>`,
+  });
+}
+
+// When a full room frees up a bed, tell admin/staff and any roomless resident
+// who prefers that room type.
+async function notifyIfRoomFreedUp(room, wasFull) {
+  // Nobody can move into a room under maintenance, so don't announce it.
+  if (room.underMaintenance) return;
+  if (!wasFull || room.occupied >= room.capacity) return;
+
+  notifyRole(['admin', 'staff'], {
+    type: 'room',
+    title: 'Room now available',
+    message: `Room ${room.roomNumber} (${room.type}) has a free bed.`,
+    link: '/rooms',
+  });
+
+  const waitingResidents = await Resident.find({
+    currentRoom: null,
+    status: 'active',
+    preferredRoomType: room.type,
+  });
+  waitingResidents.forEach((resident) => {
+    notifyUser({
+      recipient: resident.user,
+      type: 'room',
+      title: 'A room matching your preference opened up',
+      message: `Room ${room.roomNumber} (${room.type}) now has a free bed.`,
+      link: '/my-room',
+    });
   });
 }
 
@@ -72,8 +102,10 @@ async function checkOut(req, res) {
 
   const room = await Room.findById(resident.currentRoom);
   if (room) {
+    const wasFull = room.occupied >= room.capacity;
     room.occupied = Math.max(0, room.occupied - 1);
     await room.save();
+    await notifyIfRoomFreedUp(room, wasFull);
   }
 
   resident.currentRoom = null;
@@ -113,8 +145,10 @@ async function changeRoom(req, res) {
 
     const oldRoom = await Room.findById(oldAllocation.room);
     if (oldRoom) {
+      const wasFull = oldRoom.occupied >= oldRoom.capacity;
       oldRoom.occupied = Math.max(0, oldRoom.occupied - 1);
       await oldRoom.save();
+      await notifyIfRoomFreedUp(oldRoom, wasFull);
     }
   }
 

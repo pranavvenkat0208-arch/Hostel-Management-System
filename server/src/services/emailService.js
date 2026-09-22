@@ -9,12 +9,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Fire-and-log: a failed email should never break the request that
-// triggered it (e.g. registering shouldn't 500 just because Gmail hiccuped),
-// so failures are caught and logged here rather than thrown.
+// Errors are logged, not thrown, so a mail problem never fails a request.
 async function sendEmail({ to, subject, html }) {
   if (!env.EMAIL_USER || !env.EMAIL_PASS) {
-    console.warn(`[email] Not configured — skipped "${subject}" to ${to}`);
+    console.warn(`[email] Not configured, skipped "${subject}" to ${to}`);
     return;
   }
 
@@ -23,7 +21,7 @@ async function sendEmail({ to, subject, html }) {
       from: env.EMAIL_FROM || env.EMAIL_USER,
       to,
       subject,
-      html,
+      html: String(html),
     });
     console.log(`[email] Sent "${subject}" to ${to}`);
   } catch (error) {

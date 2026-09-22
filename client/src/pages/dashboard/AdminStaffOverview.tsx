@@ -16,9 +16,6 @@ function asRef(value: PopulatedRef | string | null | undefined): PopulatedRef | 
   return value && typeof value === 'object' ? value : null;
 }
 
-// The admin/staff landing view — a quick read on occupancy, what's waiting
-// on the maintenance queue, and how much billing is still outstanding, all
-// built from data the app already fetches elsewhere (no new endpoints).
 export function AdminStaffOverview() {
   const { data: occupancy, isLoading: occupancyLoading } = useOccupancySummary();
   const { data: requests, isLoading: requestsLoading } = useAllMaintenanceRequests();
@@ -79,7 +76,7 @@ export function AdminStaffOverview() {
         </CardHeader>
         <CardContent className="p-0">
           {attentionQueue.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-slate-400">Nothing pending — the maintenance queue is clear.</p>
+            <p className="px-5 py-8 text-center text-sm text-slate-400">Nothing pending. The maintenance queue is clear.</p>
           ) : (
             <ul>
               {attentionQueue.map((request) => {

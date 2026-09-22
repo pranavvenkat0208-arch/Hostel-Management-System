@@ -9,10 +9,23 @@ const paymentRecordSchema = new Schema(
   {
     status: { type: String, enum: ['unpaid', 'partially_paid', 'paid', 'overdue'], required: true },
     amount: { type: Number, min: 0 },
-    method: { type: String, enum: ['cash', 'upi', 'bank_transfer', 'card', 'other'] },
+    method: { type: String, enum: ['cash', 'upi', 'bank_transfer', 'card', 'razorpay', 'other'] },
     note: { type: String },
     recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     recordedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+// Amounts are fixed when the plan is created; only the payment fields change later.
+const installmentSchema = new Schema(
+  {
+    amount: { type: Number, required: true, min: 0.01 },
+    dueDate: { type: Date, required: true },
+    status: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+    method: { type: String, enum: ['cash', 'upi', 'bank_transfer', 'card', 'razorpay', 'other'] },
+    note: { type: String },
+    paidAt: { type: Date, default: null },
   },
   { _id: false }
 );
@@ -30,6 +43,12 @@ const invoiceSchema = new Schema(
     status: { type: String, enum: ['unpaid', 'partially_paid', 'paid', 'overdue'], default: 'unpaid' },
     dueDate: { type: Date, required: true },
     paymentHistory: { type: [paymentRecordSchema], default: [] },
+    // Optional payment plan. Empty means the balance is paid in one go.
+    installments: { type: [installmentSchema], default: [] },
+    // Used by the reminder job so it doesn't remind twice in 24h.
+    lastReminderAt: { type: Date, default: null },
+    // Stops the automatic late fee from being added more than once.
+    lateFeeApplied: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

@@ -1,5 +1,5 @@
 import { api } from './axios';
-import type { Resident, EmergencyContact } from '../types';
+import type { Resident, EmergencyContact, RoomType } from '../types';
 
 export async function fetchResidents(params?: { status?: string; search?: string }) {
   const res = await api.get<{ residents: Resident[] }>('/residents', { params });
@@ -16,15 +16,22 @@ export async function fetchMyProfile() {
   return res.data.resident;
 }
 
-export async function updateMyProfile(input: { phone?: string; emergencyContact?: EmergencyContact }) {
+export interface UpdateMyProfileInput {
+  phone?: string;
+  emergencyContact?: EmergencyContact;
+  preferredRoomType?: RoomType | null;
+}
+
+export async function updateMyProfile(input: UpdateMyProfileInput) {
   const res = await api.patch<{ resident: Resident }>('/residents/me', input);
   return res.data.resident;
 }
 
 export interface ResidentUpdateInput {
-  name?: string;
+  email?: string;
   phone?: string;
   emergencyContact?: EmergencyContact;
+  preferredRoomType?: RoomType | null;
 }
 
 export async function updateResident(id: string, input: ResidentUpdateInput) {

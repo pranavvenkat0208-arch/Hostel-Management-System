@@ -7,6 +7,8 @@ export function useMyMaintenanceRequests() {
   return useQuery({
     queryKey: ['maintenance', 'my'],
     queryFn: maintenanceApi.fetchMyMaintenanceRequests,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -14,6 +16,16 @@ export function useAllMaintenanceRequests(params?: { status?: string; priority?:
   return useQuery({
     queryKey: ['maintenance', 'all', params],
     queryFn: () => maintenanceApi.fetchAllMaintenanceRequests(params),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useMaintenanceRequest(id: string | undefined) {
+  return useQuery({
+    queryKey: ['maintenance', 'detail', id],
+    queryFn: () => maintenanceApi.fetchMaintenanceRequest(id as string),
+    enabled: Boolean(id),
   });
 }
 

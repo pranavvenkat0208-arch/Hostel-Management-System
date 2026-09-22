@@ -9,12 +9,6 @@ interface StatTileProps {
   accentClassName?: string;
 }
 
-/**
- * A small headline-number tile for dashboard/report summaries. Kept
- * text-first (per the dataviz guidance a single stat is often better as a
- * number than a chart) — the icon is decorative, the value never relies on
- * color alone.
- */
 export function StatTile({ label, value, icon: Icon, accentClassName = 'bg-indigo-50 text-indigo-600' }: StatTileProps) {
   return (
     <Card>

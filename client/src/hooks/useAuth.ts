@@ -1,32 +1,11 @@
-import { useMutation } from '@tanstack/react-query';
-import { api } from '../api/axios';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import * as authApi from '../api/auth';
 import { useAuthStore } from '../store/authStore';
-import type { User, Role } from '../types';
-
-interface AuthResponse {
-  success: boolean;
-  token: string;
-  user: User;
-}
-
-interface LoginInput {
-  email: string;
-  password: string;
-}
-
-interface RegisterInput extends LoginInput {
-  name: string;
-  phone?: string;
-  role?: Role;
-}
 
 export function useLogin() {
   const setAuth = useAuthStore((s) => s.setAuth);
   return useMutation({
-    mutationFn: async (data: LoginInput) => {
-      const res = await api.post<AuthResponse>('/auth/login', data);
-      return res.data;
-    },
+    mutationFn: authApi.login,
     onSuccess: (data) => setAuth(data.user, data.token),
   });
 }
@@ -34,10 +13,23 @@ export function useLogin() {
 export function useRegister() {
   const setAuth = useAuthStore((s) => s.setAuth);
   return useMutation({
-    mutationFn: async (data: RegisterInput) => {
-      const res = await api.post<AuthResponse>('/auth/register', data);
-      return res.data;
-    },
+    mutationFn: authApi.register,
     onSuccess: (data) => setAuth(data.user, data.token),
+  });
+}
+
+// Keeps the stored user (and role) in sync with the server. A deactivated
+// account gets a 401 here, which logs it out.
+export function useSyncCurrentUser() {
+  const setUser = useAuthStore((s) => s.setUser);
+  return useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      const user = await authApi.fetchMe();
+      setUser(user);
+      return user;
+    },
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }

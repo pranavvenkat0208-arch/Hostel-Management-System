@@ -11,23 +11,20 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { IndianRupee, Wallet, AlertTriangle, DoorOpen } from 'lucide-react';
-import { useRevenueReport, useOccupancyReport } from '../../hooks/useReports';
+import { IndianRupee, Wallet, AlertTriangle, DoorOpen, TrendingUp } from 'lucide-react';
+import { useRevenueReport, useOccupancyReport, useExpenseReport } from '../../hooks/useReports';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
 import { StatTile } from '../../components/ui/StatTile';
-import type { InvoiceStatus } from '../../types';
+import type { InvoiceStatus, ExpenseCategory } from '../../types';
 
-// Reference palette from the dataviz skill (references/palette.md), light mode.
-// series-1 (blue) always marks the "expected/total" half of a pair, series-2
-// (orange) the "actual/achieved" half — the same role in both charts below.
+// Blue = expected/total, orange = actual, in both charts.
 const SERIES_EXPECTED = '#2a78d6';
 const SERIES_ACTUAL = '#eb6834';
 const GRIDLINE = '#e1e0d9';
 const AXIS_INK = '#898781';
 
-// Fixed status palette — never reused for plain categorical series, always
-// paired with a text label (the axis category label here).
+// Status colors
 const STATUS_COLORS: Record<InvoiceStatus, string> = {
   paid: '#0ca30c',
   partially_paid: '#fab219',
@@ -42,6 +39,25 @@ const STATUS_LABELS: Record<InvoiceStatus, string> = {
   overdue: 'Overdue',
 };
 
+// One color per expense category
+const EXPENSE_CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+  electricity: '#2a78d6',
+  water: '#0ca3a3',
+  staff_salaries: '#7c3aed',
+  repairs_maintenance: '#eb6834',
+  supplies: '#d6a72a',
+  other: '#6b7280',
+};
+
+const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  electricity: 'Electricity',
+  water: 'Water',
+  staff_salaries: 'Staff salaries',
+  repairs_maintenance: 'Repairs & maintenance',
+  supplies: 'Supplies',
+  other: 'Other',
+};
+
 function formatCurrency(value: number) {
   return `₹${value.toLocaleString('en-IN')}`;
 }
@@ -49,14 +65,15 @@ function formatCurrency(value: number) {
 export function ReportsPage() {
   const { data: revenue, isLoading: revenueLoading } = useRevenueReport();
   const { data: occupancy, isLoading: occupancyLoading } = useOccupancyReport();
+  const { data: expenses, isLoading: expensesLoading } = useExpenseReport();
 
-  const isLoading = revenueLoading || occupancyLoading;
+  const isLoading = revenueLoading || occupancyLoading || expensesLoading;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Reports</h1>
-        <p className="text-sm text-slate-500">Revenue and occupancy at a glance, built from live billing and room data.</p>
+        <p className="text-sm text-slate-500">Revenue, expenses, and occupancy at a glance, built from live data.</p>
       </div>
 
       {isLoading ? (
@@ -65,7 +82,7 @@ export function ReportsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatTile
               label="Total invoiced"
               value={formatCurrency(revenue?.totals.totalInvoiced ?? 0)}
@@ -83,6 +100,12 @@ export function ReportsPage() {
               value={formatCurrency(revenue?.totals.totalOutstanding ?? 0)}
               icon={AlertTriangle}
               accentClassName="bg-red-50 text-red-600"
+            />
+            <StatTile
+              label="Net revenue"
+              value={formatCurrency(expenses?.netRevenue ?? 0)}
+              icon={TrendingUp}
+              accentClassName="bg-emerald-50 text-emerald-600"
             />
             <StatTile
               label="Occupancy rate"
@@ -110,13 +133,17 @@ export function ReportsPage() {
                       tickFormatter={(v: number) => `₹${v}`}
                     />
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Legend wrapperStyle={{ fontSize: 13 }} />
+                    {/* Recharts 3 sorts legend items alphabetically; itemSorter keeps bar order. */}
+                    <Legend
+                      wrapperStyle={{ fontSize: 13 }}
+                      itemSorter={(item) => ['Invoiced', 'Collected'].indexOf(String(item.value))}
+                    />
                     <Bar dataKey="invoiced" name="Invoiced" fill={SERIES_EXPECTED} radius={[4, 4, 0, 0]} />
                     <Bar dataKey="collected" name="Collected" fill={SERIES_ACTUAL} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="py-10 text-center text-sm text-slate-400">No invoices yet — this fills in as billing periods are created.</p>
+                <p className="py-10 text-center text-sm text-slate-400">No invoices yet.</p>
               )}
             </CardContent>
           </Card>
@@ -161,6 +188,52 @@ export function ReportsPage() {
 
             <Card>
               <CardHeader>
+                <CardTitle>Expenses by category</CardTitle>
+                <CardDescription>Operating costs logged so far, total {formatCurrency(expenses?.totalExpenses ?? 0)}.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {expenses && expenses.byCategory.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart
+                      data={expenses.byCategory.map((c) => ({ ...c, label: EXPENSE_CATEGORY_LABELS[c.category] }))}
+                      layout="vertical"
+                      margin={{ left: 12 }}
+                    >
+                      <CartesianGrid horizontal={false} stroke={GRIDLINE} />
+                      <XAxis
+                        type="number"
+                        allowDecimals={false}
+                        tick={{ fill: AXIS_INK, fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v: number) => `₹${v}`}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        tick={{ fill: '#0b0b0b', fontSize: 13 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={130}
+                      />
+                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                      <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
+                        {expenses.byCategory.map((c) => (
+                          <Cell key={c.category} fill={EXPENSE_CATEGORY_COLORS[c.category]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-10 text-center text-sm text-slate-400">No expenses logged yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
                 <CardTitle>Occupancy by room type</CardTitle>
                 <CardDescription>Capacity vs. beds currently occupied, per room type.</CardDescription>
               </CardHeader>
@@ -178,46 +251,49 @@ export function ReportsPage() {
                       />
                       <YAxis allowDecimals={false} tick={{ fill: AXIS_INK, fontSize: 12 }} axisLine={false} tickLine={false} />
                       <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <Legend
+                        wrapperStyle={{ fontSize: 13 }}
+                        itemSorter={(item) => ['Capacity', 'Occupied'].indexOf(String(item.value))}
+                      />
                       <Bar dataKey="capacity" name="Capacity" fill={SERIES_EXPECTED} radius={[4, 4, 0, 0]} />
                       <Bar dataKey="occupied" name="Occupied" fill={SERIES_ACTUAL} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="py-10 text-center text-sm text-slate-400">No rooms yet — add rooms to see occupancy here.</p>
+                  <p className="py-10 text-center text-sm text-slate-400">No rooms yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Check-ins over time</CardTitle>
+                <CardDescription>New allocations per month.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {occupancy && occupancy.checkInsByMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={occupancy.checkInsByMonth}>
+                      <CartesianGrid vertical={false} stroke={GRIDLINE} />
+                      <XAxis dataKey="month" tick={{ fill: AXIS_INK, fontSize: 12 }} axisLine={{ stroke: GRIDLINE }} tickLine={false} />
+                      <YAxis allowDecimals={false} tick={{ fill: AXIS_INK, fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value) => [`${value} check-in(s)`, 'Check-ins']} />
+                      <Line
+                        type="monotone"
+                        dataKey="checkIns"
+                        name="Check-ins"
+                        stroke={SERIES_EXPECTED}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: SERIES_EXPECTED }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-10 text-center text-sm text-slate-400">No allocations yet.</p>
                 )}
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Check-ins over time</CardTitle>
-              <CardDescription>New allocations per month — a proxy for how occupancy has trended.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {occupancy && occupancy.checkInsByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={occupancy.checkInsByMonth}>
-                    <CartesianGrid vertical={false} stroke={GRIDLINE} />
-                    <XAxis dataKey="month" tick={{ fill: AXIS_INK, fontSize: 12 }} axisLine={{ stroke: GRIDLINE }} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fill: AXIS_INK, fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => [`${value} check-in(s)`, 'Check-ins']} />
-                    <Line
-                      type="monotone"
-                      dataKey="checkIns"
-                      name="Check-ins"
-                      stroke={SERIES_EXPECTED}
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: SERIES_EXPECTED }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="py-10 text-center text-sm text-slate-400">No allocations yet.</p>
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
     </div>

@@ -1,15 +1,17 @@
 const { Resident } = require('../models/Resident');
 const { User } = require('../models/User');
 const { ApiError } = require('../utils/ApiError');
+const { escapeRegex } = require('../utils/escapeRegex');
 
 async function getResidents(req, res) {
   const { status, search } = req.query;
 
   const filter = {};
   if (status) filter.status = status;
-  if (search) filter.name = { $regex: search, $options: 'i' };
+  if (search) filter.name = { $regex: escapeRegex(search), $options: 'i' };
 
-  const residents = await Resident.find(filter).populate('currentRoom', 'roomNumber type').sort({ name: 1 });
+  // monthlyRent is used to prefill the room fee on new invoices.
+  const residents = await Resident.find(filter).populate('currentRoom', 'roomNumber type monthlyRent').sort({ name: 1 });
   res.json({ success: true, count: residents.length, residents });
 }
 
@@ -29,9 +31,8 @@ async function updateResident(req, res) {
   res.json({ success: true, resident });
 }
 
-// Removes a resident entirely — the Resident profile and their linked login
-// account. Blocked while they're still housed so a delete can never leave a
-// room's occupancy count out of sync with reality; check them out first.
+// Deletes the resident and their login. They must be checked out first so
+// room occupancy stays correct.
 async function deleteResident(req, res) {
   const resident = await Resident.findById(req.params.id);
   if (!resident) throw new ApiError(404, 'Resident not found');
@@ -59,9 +60,10 @@ async function updateMyProfile(req, res) {
   const resident = await Resident.findOne({ user: req.user.id });
   if (!resident) throw new ApiError(404, 'Resident profile not found');
 
-  const { phone, emergencyContact } = req.body;
+  const { phone, emergencyContact, preferredRoomType } = req.body;
   if (phone !== undefined) resident.phone = phone;
   if (emergencyContact !== undefined) resident.emergencyContact = emergencyContact;
+  if (preferredRoomType !== undefined) resident.preferredRoomType = preferredRoomType;
   await resident.save();
 
   res.json({ success: true, resident });

@@ -3,6 +3,7 @@ const { Resident } = require('../models/Resident');
 const { ApiError } = require('../utils/ApiError');
 const { notifyUser, notifyRole } = require('../services/notificationService');
 const { sendEmail } = require('../services/emailService');
+const { html } = require('../utils/html');
 
 async function createRequest(req, res) {
   const resident = await Resident.findOne({ user: req.user.id });
@@ -21,7 +22,8 @@ async function createRequest(req, res) {
     category,
     priority,
     status: 'open',
-    statusHistory: [{ status: 'open', changedAt: new Date() }],
+    // So the first timeline entry shows the resident's name.
+    statusHistory: [{ status: 'open', changedBy: req.user.id, changedAt: new Date() }],
   });
 
   notifyRole(['admin', 'staff'], {
@@ -74,10 +76,12 @@ async function getRequest(req, res) {
     }
   }
 
+  // changedBy is populated so the timeline can show names.
   const request = await MaintenanceRequest.findById(req.params.id)
     .populate('resident', 'name email phone')
     .populate('room', 'roomNumber')
-    .populate('assignedTo', 'name');
+    .populate('assignedTo', 'name')
+    .populate('statusHistory.changedBy', 'name');
 
   res.json({ success: true, request });
 }
@@ -141,7 +145,7 @@ async function updateStatus(req, res) {
     sendEmail({
       to: resident.email,
       subject: `Maintenance Update: ${request.title}`,
-      html: `<p>Hi ${resident.name},</p><p>Your maintenance request "<b>${request.title}</b>" is now <b>${readableStatus}</b>.</p>${note ? `<p>Note: ${note}</p>` : ''}`,
+      html: html`<p>Hi ${resident.name},</p><p>Your maintenance request "<b>${request.title}</b>" is now <b>${readableStatus}</b>.</p>${note ? html`<p>Note: ${note}</p>` : ''}`,
     });
   }
 

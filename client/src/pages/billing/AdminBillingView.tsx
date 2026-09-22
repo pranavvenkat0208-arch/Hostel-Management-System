@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, CreditCard } from 'lucide-react';
+import { Plus, CreditCard, CalendarClock, Percent } from 'lucide-react';
 import { useInvoices } from '../../hooks/useInvoices';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -7,6 +7,8 @@ import { Spinner } from '../../components/ui/Spinner';
 import { InvoiceStatusBadge } from '../../components/billing/InvoiceStatusBadge';
 import { CreateInvoiceModal } from '../../components/billing/CreateInvoiceModal';
 import { UpdateInvoiceStatusModal } from '../../components/billing/UpdateInvoiceStatusModal';
+import { InstallmentPlanModal } from '../../components/billing/InstallmentPlanModal';
+import { EditInvoiceAdjustmentsModal } from '../../components/billing/EditInvoiceAdjustmentsModal';
 import type { Invoice, PopulatedRef } from '../../types';
 
 function asRef(value: PopulatedRef | string | null | undefined): PopulatedRef | null {
@@ -17,6 +19,8 @@ export function AdminBillingView() {
   const { data: invoices, isLoading } = useInvoices();
   const [createOpen, setCreateOpen] = useState(false);
   const [statusInvoice, setStatusInvoice] = useState<Invoice | null>(null);
+  const [planInvoice, setPlanInvoice] = useState<Invoice | null>(null);
+  const [adjustmentsInvoice, setAdjustmentsInvoice] = useState<Invoice | null>(null);
 
   return (
     <div className="space-y-6">
@@ -69,6 +73,23 @@ export function AdminBillingView() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => setAdjustmentsInvoice(inv)}
+                          title="Edit discount & late fee"
+                        >
+                          <Percent className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setPlanInvoice(inv)}
+                          title="Payment plan"
+                          disabled={inv.status === 'paid'}
+                        >
+                          <CalendarClock className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setStatusInvoice(inv)}
                           title="Update payment status"
                         >
@@ -96,6 +117,12 @@ export function AdminBillingView() {
         open={Boolean(statusInvoice)}
         onClose={() => setStatusInvoice(null)}
         invoice={statusInvoice}
+      />
+      <InstallmentPlanModal open={Boolean(planInvoice)} onClose={() => setPlanInvoice(null)} invoice={planInvoice} />
+      <EditInvoiceAdjustmentsModal
+        open={Boolean(adjustmentsInvoice)}
+        onClose={() => setAdjustmentsInvoice(null)}
+        invoice={adjustmentsInvoice}
       />
     </div>
   );

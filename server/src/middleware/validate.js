@@ -1,8 +1,6 @@
 const { ApiError } = require('../utils/ApiError');
 
-// Validates req.body against a Zod schema, replaces req.body with the
-// parsed (and defaulted/coerced) result, or forwards a 400 with a clear
-// message if it fails.
+// Validates req.body with a Zod schema and replaces it with the parsed result.
 function validate(schema) {
   return (req, _res, next) => {
     const result = schema.safeParse(req.body);

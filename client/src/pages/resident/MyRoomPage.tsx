@@ -1,39 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMyProfile, useUpdateMyProfile } from '../../hooks/useResidents';
+import { useToastStore } from '../../store/toastStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
+import { Select } from '../../components/ui/Select';
 import { Spinner } from '../../components/ui/Spinner';
+import { PhoneInput } from '../../components/ui/PhoneInput';
 import { getErrorMessage } from '../../lib/utils';
+import type { Resident, RoomType } from '../../types';
 
 export function MyRoomPage() {
   const { data: resident, isLoading } = useMyProfile();
-  const updateProfile = useUpdateMyProfile();
-
-  const [phone, setPhone] = useState('');
-  const [ecName, setEcName] = useState('');
-  const [ecRelation, setEcRelation] = useState('');
-  const [ecPhone, setEcPhone] = useState('');
-
-  useEffect(() => {
-    if (resident) {
-      setPhone(resident.phone ?? '');
-      setEcName(resident.emergencyContact?.name ?? '');
-      setEcRelation(resident.emergencyContact?.relation ?? '');
-      setEcPhone(resident.emergencyContact?.phone ?? '');
-    }
-  }, [resident]);
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    updateProfile.mutate({
-      phone,
-      emergencyContact: { name: ecName, relation: ecRelation, phone: ecPhone },
-    });
-  }
 
   if (isLoading) {
     return (
@@ -78,7 +59,7 @@ export function MyRoomPage() {
             <div className="flex items-center gap-3">
               <Badge variant="warning">Unassigned</Badge>
               <p className="text-sm text-slate-500">
-                You haven&apos;t been allocated a room yet — contact the hostel office.
+                You haven&apos;t been allocated a room yet. Please contact the hostel office.
               </p>
             </div>
           )}
@@ -91,35 +72,76 @@ export function MyRoomPage() {
           <CardDescription>Keep your phone and emergency contact up to date.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </div>
-            <div />
-            <div className="space-y-1.5">
-              <Label htmlFor="ecName">Emergency contact name</Label>
-              <Input id="ecName" value={ecName} onChange={(e) => setEcName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ecRelation">Relation</Label>
-              <Input id="ecRelation" value={ecRelation} onChange={(e) => setEcRelation(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ecPhone">Emergency contact phone</Label>
-              <Input id="ecPhone" value={ecPhone} onChange={(e) => setEcPhone(e.target.value)} />
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" variant="primary" disabled={updateProfile.isPending}>
-                {updateProfile.isPending ? 'Saving…' : 'Save changes'}
-              </Button>
-            </div>
-            {updateProfile.isError && (
-              <p className="text-sm text-red-600 sm:col-span-2">{getErrorMessage(updateProfile.error)}</p>
-            )}
-          </form>
+          {/* Keyed on updatedAt so it reloads after a save or a staff edit. */}
+          <ContactDetailsForm key={resident?.updatedAt ?? 'empty'} resident={resident} />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ContactDetailsForm({ resident }: { resident?: Resident }) {
+  const updateProfile = useUpdateMyProfile();
+  const showToast = useToastStore((s) => s.showToast);
+
+  const [phone, setPhone] = useState(resident?.phone ?? '');
+  const [ecName, setEcName] = useState(resident?.emergencyContact?.name ?? '');
+  const [ecRelation, setEcRelation] = useState(resident?.emergencyContact?.relation ?? '');
+  const [ecPhone, setEcPhone] = useState(resident?.emergencyContact?.phone ?? '');
+  const [preferredRoomType, setPreferredRoomType] = useState<RoomType | ''>(resident?.preferredRoomType ?? '');
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    updateProfile.mutate(
+      {
+        phone,
+        emergencyContact: { name: ecName, relation: ecRelation, phone: ecPhone },
+        preferredRoomType: preferredRoomType || null,
+      },
+      { onSuccess: () => showToast('Contact details saved.') }
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5">
+        <Label htmlFor="phone">Phone</Label>
+        <PhoneInput id="phone" value={phone} onChange={setPhone} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="preferredRoomType">Preferred room type</Label>
+        <Select
+          id="preferredRoomType"
+          value={preferredRoomType}
+          onChange={(e) => setPreferredRoomType(e.target.value as RoomType | '')}
+        >
+          <option value="">No preference</option>
+          <option value="single">Single</option>
+          <option value="double">Double</option>
+          <option value="triple">Triple</option>
+          <option value="dormitory">Dormitory</option>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ecName">Emergency contact name</Label>
+        <Input id="ecName" value={ecName} onChange={(e) => setEcName(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ecRelation">Relation</Label>
+        <Input id="ecRelation" value={ecRelation} onChange={(e) => setEcRelation(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ecPhone">Emergency contact phone</Label>
+        <PhoneInput id="ecPhone" value={ecPhone} onChange={setEcPhone} />
+      </div>
+      <div className="flex items-end">
+        <Button type="submit" variant="primary" disabled={updateProfile.isPending}>
+          {updateProfile.isPending ? 'Saving…' : 'Save changes'}
+        </Button>
+      </div>
+      {updateProfile.isError && (
+        <p className="text-sm text-red-600 sm:col-span-2">{getErrorMessage(updateProfile.error)}</p>
+      )}
+    </form>
   );
 }

@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: Role;
   phone?: string;
+  isActive?: boolean;
 }
 
 export type RoomType = 'single' | 'double' | 'triple' | 'dormitory';
@@ -48,6 +49,7 @@ export interface Resident {
   phone?: string;
   emergencyContact?: EmergencyContact;
   currentRoom?: ResidentRoom | null;
+  preferredRoomType?: RoomType | null;
   status: 'active' | 'checked_out';
   createdAt: string;
   updatedAt: string;
@@ -81,6 +83,7 @@ export interface StatusEvent {
   status: MaintenanceStatus;
   note?: string;
   changedAt: string;
+  changedBy?: PopulatedRef | string;
 }
 
 export interface PopulatedRef {
@@ -106,7 +109,7 @@ export interface MaintenanceTicket {
   updatedAt: string;
 }
 
-export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'card' | 'other';
+export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'card' | 'razorpay' | 'other';
 export type InvoiceStatus = 'unpaid' | 'partially_paid' | 'paid' | 'overdue';
 
 export interface LineItem {
@@ -122,6 +125,17 @@ export interface PaymentRecord {
   recordedAt: string;
 }
 
+export type InstallmentStatus = 'pending' | 'paid';
+
+export interface Installment {
+  amount: number;
+  dueDate: string;
+  status: InstallmentStatus;
+  method?: PaymentMethod;
+  note?: string;
+  paidAt?: string | null;
+}
+
 export interface Invoice {
   _id: string;
   resident: PopulatedRef | string;
@@ -135,8 +149,16 @@ export interface Invoice {
   status: InvoiceStatus;
   dueDate: string;
   paymentHistory: PaymentRecord[];
+  installments: Installment[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RazorpayOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
 }
 
 export interface RevenueByPeriod {
@@ -183,10 +205,46 @@ export interface OccupancyReport {
   checkInsByMonth: CheckInsByMonth[];
 }
 
-export type NotificationType = 'allocation' | 'maintenance' | 'invoice' | 'system';
+export const EXPENSE_CATEGORIES = [
+  'electricity',
+  'water',
+  'staff_salaries',
+  'repairs_maintenance',
+  'supplies',
+  'other',
+] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
-// Named AppNotification (not Notification) to avoid colliding with the
-// browser's built-in Notification API type.
+export interface Expense {
+  _id: string;
+  category: ExpenseCategory;
+  amount: number;
+  date: string;
+  description?: string;
+  recordedBy: PopulatedRef | string;
+  createdAt: string;
+}
+
+export interface ExpenseByCategory {
+  category: ExpenseCategory;
+  amount: number;
+}
+
+export interface ExpenseByMonth {
+  month: string;
+  amount: number;
+}
+
+export interface ExpenseReport {
+  totalExpenses: number;
+  byCategory: ExpenseByCategory[];
+  byMonth: ExpenseByMonth[];
+  netRevenue: number;
+}
+
+export type NotificationType = 'allocation' | 'maintenance' | 'invoice' | 'system' | 'room';
+
+// Not called Notification to avoid clashing with the browser's Notification type.
 export interface AppNotification {
   _id: string;
   recipient: string;

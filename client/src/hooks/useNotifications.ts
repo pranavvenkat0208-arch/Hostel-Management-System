@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as notificationsApi from '../api/notifications';
 
-// Polls every 30s so the bell and the full list stay reasonably fresh
-// without needing websockets — more than enough for a course project.
 export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],

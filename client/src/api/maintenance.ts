@@ -27,6 +27,12 @@ export async function fetchAllMaintenanceRequests(params?: {
   return res.data.requests;
 }
 
+// Includes the status timeline with names.
+export async function fetchMaintenanceRequest(id: string) {
+  const res = await api.get<{ request: MaintenanceTicket }>(`/maintenance/${id}`);
+  return res.data.request;
+}
+
 export async function assignMaintenanceRequest(id: string, assignedTo: string) {
   const res = await api.patch<{ request: MaintenanceTicket }>(`/maintenance/${id}/assign`, { assignedTo });
   return res.data.request;

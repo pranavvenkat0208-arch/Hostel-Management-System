@@ -18,7 +18,7 @@ export function NotificationBell() {
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
 
-  // Close the dropdown on an outside click, same pattern as any small popover.
+  // Close on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {

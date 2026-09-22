@@ -1,5 +1,8 @@
-const { Room } = require('../models/Room');
+const { Room, ROOM_TYPES } = require('../models/Room');
+const { Resident } = require('../models/Resident');
 const { ApiError } = require('../utils/ApiError');
+const { escapeRegex } = require('../utils/escapeRegex');
+const { notifyRole, notifyUser } = require('../services/notificationService');
 
 async function createRoom(req, res) {
   const { roomNumber } = req.body;
@@ -16,7 +19,7 @@ async function getRooms(req, res) {
 
   const filter = {};
   if (type) filter.type = type;
-  if (search) filter.roomNumber = { $regex: search, $options: 'i' };
+  if (search) filter.roomNumber = { $regex: escapeRegex(search), $options: 'i' };
 
   let rooms = await Room.find(filter).sort({ roomNumber: 1 });
 
@@ -46,10 +49,41 @@ async function updateRoom(req, res) {
     throw new ApiError(400, `Cannot set capacity below current occupancy (${room.occupied})`);
   }
 
+  // Only notify when the maintenance flag actually changes.
+  const maintenanceChanging =
+    req.body.underMaintenance !== undefined && req.body.underMaintenance !== room.underMaintenance;
+
   Object.assign(room, req.body);
   await room.save();
 
+  if (maintenanceChanging) {
+    await notifyMaintenanceToggle(room);
+  }
+
   res.json({ success: true, room });
+}
+
+// Tell admin/staff and the room's current residents.
+async function notifyMaintenanceToggle(room) {
+  const readableStatus = room.underMaintenance ? 'placed under maintenance' : 'brought back into service';
+
+  notifyRole(['admin', 'staff'], {
+    type: 'room',
+    title: room.underMaintenance ? 'Room under maintenance' : 'Room back in service',
+    message: `Room ${room.roomNumber} has been ${readableStatus}.`,
+    link: '/rooms',
+  });
+
+  const residents = await Resident.find({ currentRoom: room._id, status: 'active' });
+  residents.forEach((resident) => {
+    notifyUser({
+      recipient: resident.user,
+      type: 'room',
+      title: room.underMaintenance ? 'Your room is under maintenance' : 'Your room is back in service',
+      message: `Room ${room.roomNumber} has been ${readableStatus}.`,
+      link: '/my-room',
+    });
+  });
 }
 
 async function deleteRoom(req, res) {
@@ -70,7 +104,7 @@ async function getOccupancySummary(_req, res) {
   const underMaintenance = rooms.filter((r) => r.underMaintenance).length;
   const occupancyRate = totalCapacity > 0 ? Number(((totalOccupied / totalCapacity) * 100).toFixed(1)) : 0;
 
-  const byType = ['single', 'double', 'triple', 'dormitory'].map((type) => {
+  const byType = ROOM_TYPES.map((type) => {
     const roomsOfType = rooms.filter((r) => r.type === type);
     const capacity = roomsOfType.reduce((sum, r) => sum + r.capacity, 0);
     const occupied = roomsOfType.reduce((sum, r) => sum + r.occupied, 0);

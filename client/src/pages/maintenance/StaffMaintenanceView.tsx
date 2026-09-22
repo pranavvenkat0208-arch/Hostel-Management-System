@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import {
-  useAllMaintenanceRequests,
-  useAssignMaintenanceRequest,
-  useUpdateMaintenanceStatus,
-} from '../../hooks/useMaintenance';
+import { useAllMaintenanceRequests, useAssignMaintenanceRequest } from '../../hooks/useMaintenance';
 import { useUsers } from '../../hooks/useUsers';
 import { Card, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { Spinner } from '../../components/ui/Spinner';
 import { PriorityBadge, MaintenanceStatusBadge } from '../../components/maintenance/StatusBadges';
-import type { MaintenanceStatus, PopulatedRef } from '../../types';
+import { UpdateMaintenanceStatusModal } from '../../components/maintenance/UpdateMaintenanceStatusModal';
+import type { MaintenanceTicket, PopulatedRef } from '../../types';
 
 function asRef(value: PopulatedRef | string | null | undefined): PopulatedRef | null {
   return value && typeof value === 'object' ? value : null;
@@ -22,7 +20,7 @@ export function StaffMaintenanceView() {
   );
   const { data: staff } = useUsers({ role: 'staff' });
   const assign = useAssignMaintenanceRequest();
-  const updateStatus = useUpdateMaintenanceStatus();
+  const [statusRequest, setStatusRequest] = useState<MaintenanceTicket | null>(null);
 
   return (
     <div className="space-y-6">
@@ -94,19 +92,10 @@ export function StaffMaintenanceView() {
                           ))}
                         </Select>
                       </td>
-                      <td className="px-5 py-3">
-                        <Select
-                          value={r.status}
-                          onChange={(e) =>
-                            updateStatus.mutate({ id: r._id, status: e.target.value as MaintenanceStatus })
-                          }
-                          className="h-8 text-xs"
-                        >
-                          <option value="open">Open</option>
-                          <option value="in_progress">In progress</option>
-                          <option value="resolved">Resolved</option>
-                          <option value="closed">Closed</option>
-                        </Select>
+                      <td className="px-5 py-3 text-right">
+                        <Button variant="outline" size="sm" onClick={() => setStatusRequest(r)}>
+                          Update status
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -123,6 +112,12 @@ export function StaffMaintenanceView() {
           )}
         </CardContent>
       </Card>
+
+      <UpdateMaintenanceStatusModal
+        open={Boolean(statusRequest)}
+        onClose={() => setStatusRequest(null)}
+        request={statusRequest}
+      />
     </div>
   );
 }

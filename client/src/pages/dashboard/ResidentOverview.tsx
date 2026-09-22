@@ -10,9 +10,6 @@ function formatCurrency(value: number) {
   return `₹${value.toLocaleString('en-IN')}`;
 }
 
-// The resident landing view — their room, how many maintenance requests are
-// still open, and what they currently owe, all from data already fetched
-// elsewhere in the app (My Room, Maintenance, Billing).
 export function ResidentOverview() {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: requests, isLoading: requestsLoading } = useMyMaintenanceRequests();

@@ -1,8 +1,7 @@
 const { Notification } = require('../models/Notification');
 const { ApiError } = require('../utils/ApiError');
 
-// Most recent 50 is plenty for an in-app bell — this isn't meant to be a
-// full audit log, just "what happened recently that I should know about."
+// Latest 50 is enough for the bell dropdown.
 async function getMyNotifications(req, res) {
   const notifications = await Notification.find({ recipient: req.user.id }).sort({ createdAt: -1 }).limit(50);
   const unreadCount = await Notification.countDocuments({ recipient: req.user.id, read: false });

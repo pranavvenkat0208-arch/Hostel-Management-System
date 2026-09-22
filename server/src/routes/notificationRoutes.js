@@ -4,7 +4,7 @@ const { protect } = require('../middleware/auth');
 
 const router = Router();
 
-// Every role has notifications — everyone just needs to be logged in.
+// Available to every logged-in user.
 router.use(protect);
 
 router.get('/', getMyNotifications);

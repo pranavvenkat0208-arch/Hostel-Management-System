@@ -18,13 +18,14 @@ interface UpdateInvoiceStatusModalProps {
 
 export function UpdateInvoiceStatusModal({ open, onClose, invoice }: UpdateInvoiceStatusModalProps) {
   const updateStatus = useUpdatePaymentStatus();
-  const [status, setStatus] = useState<InvoiceStatus>('paid');
+  // Default to "Partially paid" so Save never settles the full balance by accident.
+  const [status, setStatus] = useState<InvoiceStatus>('partially_paid');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [note, setNote] = useState('');
 
   function close() {
-    setStatus('paid');
+    setStatus('partially_paid');
     setAmount('');
     setMethod('cash');
     setNote('');
@@ -40,14 +41,14 @@ export function UpdateInvoiceStatusModal({ open, onClose, invoice }: UpdateInvoi
     );
   }
 
-  const remaining = invoice ? invoice.totalAmount - invoice.amountPaid : 0;
+  const remaining = invoice ? Math.max(0, invoice.totalAmount - invoice.amountPaid) : 0;
 
   return (
-    <Modal open={open} onClose={close} title={`Update payment — ${invoice?.billingPeriod ?? ''}`}>
+    <Modal open={open} onClose={close} title={`Update payment: ${invoice?.billingPeriod ?? ''}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {invoice && (
           <p className="text-sm text-slate-500">
-            Total ₹{invoice.totalAmount} · Paid ₹{invoice.amountPaid} · Remaining ₹{remaining}
+            Total ₹{invoice.totalAmount} · Paid ₹{invoice.amountPaid} · <span className="font-medium text-slate-700">Outstanding ₹{remaining}</span>
           </p>
         )}
         <div className="space-y-1.5">
@@ -61,8 +62,27 @@ export function UpdateInvoiceStatusModal({ open, onClose, invoice }: UpdateInvoi
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="amount">Amount received (optional)</Label>
-            <Input id="amount" type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <Label htmlFor="amount">
+              Amount received {status === 'partially_paid' ? '' : '(optional)'}
+            </Label>
+            <Input
+              id="amount"
+              type="number"
+              min={0}
+              max={remaining}
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required={status === 'partially_paid'}
+            />
+            {status === 'paid' && !amount && (
+              <p className="text-xs font-medium text-amber-600">
+                This will record ₹{remaining} as received.
+              </p>
+            )}
+            {status === 'paid' && amount && (
+              <p className="text-xs text-slate-400">This will record ₹{amount} as received.</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="method">Payment method</Label>

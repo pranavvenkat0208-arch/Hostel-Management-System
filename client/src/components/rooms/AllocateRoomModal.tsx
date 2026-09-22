@@ -48,6 +48,11 @@ export function AllocateRoomModal({ open, onClose, resident, mode }: AllocateRoo
       title={mode === 'allocate' ? `Allocate a room to ${resident?.name}` : `Move ${resident?.name} to a new room`}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {resident?.preferredRoomType && (
+          <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+            {resident.name} said they'd prefer a <span className="font-medium capitalize">{resident.preferredRoomType}</span> room.
+          </p>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="room">Available room</Label>
           <Select id="room" value={roomId} onChange={(e) => setRoomId(e.target.value)} required>
@@ -55,6 +60,7 @@ export function AllocateRoomModal({ open, onClose, resident, mode }: AllocateRoo
             {availableRooms.map((r) => (
               <option key={r._id} value={r._id}>
                 {r.roomNumber} · {r.type} · {r.occupied}/{r.capacity} occupied · ₹{r.monthlyRent}/mo
+                {r.type === resident?.preferredRoomType ? ' · matches preference' : ''}
               </option>
             ))}
           </Select>

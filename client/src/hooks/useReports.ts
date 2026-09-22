@@ -14,3 +14,10 @@ export function useOccupancyReport() {
     queryFn: reportsApi.fetchOccupancyReport,
   });
 }
+
+export function useExpenseReport() {
+  return useQuery({
+    queryKey: ['reports', 'expenses'],
+    queryFn: reportsApi.fetchExpenseReport,
+  });
+}

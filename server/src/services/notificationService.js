@@ -1,9 +1,7 @@
 const { Notification } = require('../models/Notification');
 const { User } = require('../models/User');
 
-// Same philosophy as emailService's sendEmail: creating a notification is a
-// side effect of some other action (checking a resident in, updating an
-// invoice), so a failure here should never break that action's response.
+// Like sendEmail, errors are logged and never thrown.
 async function notifyUser({ recipient, type, title, message, link }) {
   try {
     await Notification.create({ recipient, type, title, message, link });
@@ -12,9 +10,7 @@ async function notifyUser({ recipient, type, title, message, link }) {
   }
 }
 
-// Notifies every active user in one role (or set of roles) — used for
-// events staff/admins care about but no single resident triggered, like a
-// new maintenance request landing in the queue.
+// Notify every active user with the given role(s).
 async function notifyRole(role, { type, title, message, link }) {
   try {
     const roles = Array.isArray(role) ? role : [role];

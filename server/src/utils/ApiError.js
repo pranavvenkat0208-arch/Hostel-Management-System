@@ -1,6 +1,4 @@
-// A typed error we can throw from anywhere in the app (controllers, services)
-// and have the global error handler turn into a clean JSON response with the
-// right HTTP status code, instead of a generic 500.
+// Error with an HTTP status. errorHandler turns it into a JSON response.
 class ApiError extends Error {
   constructor(statusCode, message) {
     super(message);

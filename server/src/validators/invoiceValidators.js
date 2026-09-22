@@ -21,4 +21,42 @@ const updatePaymentStatusSchema = z.object({
   note: z.string().optional(),
 });
 
-module.exports = { lineItemSchema, createInvoiceSchema, updatePaymentStatusSchema };
+// At least one of discount / lateFee is required.
+const updateInvoiceAdjustmentsSchema = z
+  .object({
+    discount: z.coerce.number().min(0).optional(),
+    lateFee: z.coerce.number().min(0).optional(),
+  })
+  .refine((data) => data.discount !== undefined || data.lateFee !== undefined, {
+    message: 'Provide a discount or a late fee to update',
+  });
+
+const installmentInputSchema = z.object({
+  amount: z.coerce.number().positive('Installment amount must be greater than 0'),
+  dueDate: z.coerce.date(),
+});
+
+const createInstallmentPlanSchema = z.object({
+  installments: z.array(installmentInputSchema).min(2, 'A payment plan needs at least 2 installments'),
+});
+
+const payInstallmentSchema = z.object({
+  method: z.enum(['cash', 'upi', 'bank_transfer', 'card', 'other']),
+  note: z.string().optional(),
+});
+
+const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+});
+
+module.exports = {
+  lineItemSchema,
+  createInvoiceSchema,
+  updatePaymentStatusSchema,
+  updateInvoiceAdjustmentsSchema,
+  createInstallmentPlanSchema,
+  payInstallmentSchema,
+  verifyPaymentSchema,
+};

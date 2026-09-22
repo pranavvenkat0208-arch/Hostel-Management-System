@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DoorOpen, LogOut, ArrowRightLeft, Trash2 } from 'lucide-react';
+import { DoorOpen, LogOut, ArrowRightLeft, Trash2, History, Pencil } from 'lucide-react';
 import { useResidents, useDeleteResident } from '../../hooks/useResidents';
 import { useCheckOutResident } from '../../hooks/useAllocations';
 import { useAuthStore } from '../../store/authStore';
@@ -8,6 +8,8 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
 import { AllocateRoomModal } from '../../components/rooms/AllocateRoomModal';
+import { AllocationHistoryModal } from '../../components/rooms/AllocationHistoryModal';
+import { EditResidentModal } from '../../components/rooms/EditResidentModal';
 import { getErrorMessage } from '../../lib/utils';
 import type { Resident } from '../../types';
 
@@ -19,6 +21,8 @@ export function ResidentsPage() {
 
   const [modalResident, setModalResident] = useState<Resident | null>(null);
   const [modalMode, setModalMode] = useState<'allocate' | 'change'>('allocate');
+  const [historyResident, setHistoryResident] = useState<Resident | null>(null);
+  const [editResident, setEditResident] = useState<Resident | null>(null);
 
   function openAllocate(resident: Resident) {
     setModalResident(resident);
@@ -74,9 +78,15 @@ export function ResidentsPage() {
                     <td className="px-5 py-3 text-slate-600">{resident.phone || '—'}</td>
                     <td className="px-5 py-3 text-slate-600">{resident.currentRoom?.roomNumber ?? '—'}</td>
                     <td className="px-5 py-3">
-                      <Badge variant={resident.status === 'active' ? 'success' : 'default'}>
-                        {resident.status === 'active' ? 'Active' : 'Checked out'}
-                      </Badge>
+                      {resident.status === 'active' ? (
+                        resident.currentRoom ? (
+                          <Badge variant="success">Active</Badge>
+                        ) : (
+                          <Badge variant="default">Unassigned</Badge>
+                        )
+                      ) : (
+                        <Badge variant="default">Checked out</Badge>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1">
@@ -109,6 +119,22 @@ export function ResidentsPage() {
                             <DoorOpen className="h-4 w-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setHistoryResident(resident)}
+                          title="Allocation history"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditResident(resident)}
+                          title="Edit details"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         {role === 'admin' && !resident.currentRoom && (
                           <Button
                             variant="ghost"
@@ -141,6 +167,17 @@ export function ResidentsPage() {
         onClose={() => setModalResident(null)}
         resident={modalResident}
         mode={modalMode}
+      />
+      <AllocationHistoryModal
+        open={Boolean(historyResident)}
+        onClose={() => setHistoryResident(null)}
+        title={historyResident ? `${historyResident.name}'s room history` : 'Room history'}
+        residentId={historyResident?._id}
+      />
+      <EditResidentModal
+        open={Boolean(editResident)}
+        onClose={() => setEditResident(null)}
+        resident={editResident}
       />
     </div>
   );

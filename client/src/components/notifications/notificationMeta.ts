@@ -1,14 +1,14 @@
-import { DoorOpen, Wrench, Receipt, Bell } from 'lucide-react';
+import { DoorOpen, Wrench, Receipt, Bell, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { NotificationType } from '../../types';
 
-// Shared between the topbar bell and the full notifications page so both
-// render each notification type the same way.
+// Icons/colors per notification type, used by the bell and the notifications page.
 export const notificationIcon: Record<NotificationType, LucideIcon> = {
   allocation: DoorOpen,
   maintenance: Wrench,
   invoice: Receipt,
   system: Bell,
+  room: Building2,
 };
 
 export const notificationAccent: Record<NotificationType, string> = {
@@ -16,6 +16,7 @@ export const notificationAccent: Record<NotificationType, string> = {
   maintenance: 'bg-amber-50 text-amber-600',
   invoice: 'bg-emerald-50 text-emerald-600',
   system: 'bg-slate-100 text-slate-600',
+  room: 'bg-cyan-50 text-cyan-600',
 };
 
 export function timeAgo(isoDate: string): string {

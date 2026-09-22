@@ -1,6 +1,7 @@
 const { Invoice } = require('../models/Invoice');
-const { Room } = require('../models/Room');
+const { Room, ROOM_TYPES } = require('../models/Room');
 const { Allocation } = require('../models/Allocation');
+const { Expense } = require('../models/Expense');
 
 async function getRevenueReport(_req, res) {
   const byPeriod = await Invoice.aggregate([
@@ -58,7 +59,7 @@ async function getOccupancyReport(_req, res) {
   const totalOccupied = rooms.reduce((sum, r) => sum + r.occupied, 0);
   const occupancyRate = totalCapacity > 0 ? Number(((totalOccupied / totalCapacity) * 100).toFixed(1)) : 0;
 
-  const byType = ['single', 'double', 'triple', 'dormitory'].map((type) => {
+  const byType = ROOM_TYPES.map((type) => {
     const roomsOfType = rooms.filter((r) => r.type === type);
     const capacity = roomsOfType.reduce((sum, r) => sum + r.capacity, 0);
     const occupied = roomsOfType.reduce((sum, r) => sum + r.occupied, 0);
@@ -70,8 +71,7 @@ async function getOccupancyReport(_req, res) {
     };
   });
 
-  // Check-ins per month — a real, data-backed proxy for how occupancy has
-  // trended, since we don't keep periodic occupancy snapshots.
+  // Check-ins per month, used as the occupancy trend (we don't store snapshots).
   const checkInsByMonth = await Allocation.aggregate([
     { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$checkInDate' } }, count: { $sum: 1 } } },
     { $sort: { _id: 1 } },
@@ -90,4 +90,33 @@ async function getOccupancyReport(_req, res) {
   });
 }
 
-module.exports = { getRevenueReport, getOccupancyReport };
+async function getExpenseReport(_req, res) {
+  const byCategory = await Expense.aggregate([
+    { $group: { _id: '$category', amount: { $sum: '$amount' } } },
+    { $sort: { amount: -1 } },
+  ]);
+
+  const byMonth = await Expense.aggregate([
+    { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$date' } }, amount: { $sum: '$amount' } } },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const totalAgg = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+  const totalExpenses = totalAgg[0]?.total ?? 0;
+
+  // Net revenue = collected - expenses
+  const collectedAgg = await Invoice.aggregate([{ $group: { _id: null, collected: { $sum: '$amountPaid' } } }]);
+  const totalCollected = collectedAgg[0]?.collected ?? 0;
+
+  res.json({
+    success: true,
+    report: {
+      totalExpenses,
+      byCategory: byCategory.map((c) => ({ category: c._id, amount: c.amount })),
+      byMonth: byMonth.map((m) => ({ month: m._id, amount: m.amount })),
+      netRevenue: totalCollected - totalExpenses,
+    },
+  });
+}
+
+module.exports = { getRevenueReport, getOccupancyReport, getExpenseReport };

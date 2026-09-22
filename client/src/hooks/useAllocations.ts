@@ -31,9 +31,11 @@ export function useChangeRoom() {
   });
 }
 
-export function useAllocationHistory(params?: { residentId?: string; roomId?: string }) {
+// Pass enabled: open from modals so it doesn't fetch while hidden.
+export function useAllocationHistory(params?: { residentId?: string; roomId?: string }, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['allocations', params],
     queryFn: () => allocationsApi.fetchAllocationHistory(params),
+    enabled: options?.enabled ?? true,
   });
 }

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as residentsApi from '../api/residents';
-import type { ResidentUpdateInput } from '../api/residents';
-import type { EmergencyContact } from '../types';
+import type { ResidentUpdateInput, UpdateMyProfileInput } from '../api/residents';
 
 export function useResidents(params?: { status?: string; search?: string }) {
   return useQuery({
@@ -22,13 +21,15 @@ export function useMyProfile() {
   return useQuery({
     queryKey: ['residents', 'me'],
     queryFn: residentsApi.fetchMyProfile,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useUpdateMyProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { phone?: string; emergencyContact?: EmergencyContact }) => residentsApi.updateMyProfile(input),
+    mutationFn: (input: UpdateMyProfileInput) => residentsApi.updateMyProfile(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['residents', 'me'] }),
   });
 }

@@ -5,29 +5,27 @@ import { useRegister } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
-import { Select } from '../../components/ui/Select';
+import { PhoneInput } from '../../components/ui/PhoneInput';
 import { getErrorMessage } from '../../lib/utils';
-import type { Role } from '../../types';
 
 export function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<Role>('resident');
   const register = useRegister();
   const navigate = useNavigate();
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    register.mutate({ name, email, password, phone, role }, { onSuccess: () => navigate('/') });
+    register.mutate({ name, email, password, phone }, { onSuccess: () => navigate('/') });
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">Create an account</h1>
-        <p className="mt-1 text-sm text-slate-500">Register to access the hostel management system.</p>
+        <p className="mt-1 text-sm text-slate-500">Register as a resident to access the hostel management system.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
@@ -40,7 +38,7 @@ export function Register() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <PhoneInput id="phone" value={phone} onChange={setPhone} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
@@ -53,18 +51,6 @@ export function Register() {
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="role">Role</Label>
-            {/* In a real deployment only an existing admin would grant admin/staff
-                roles. Left open here so admin/staff/resident accounts can all be
-                created for demoing the project. */}
-            <Select id="role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              <option value="resident">Resident</option>
-              <option value="staff">Staff</option>
-              <option value="admin">Admin</option>
-            </Select>
-          </div>
-
           {register.isError && <p className="text-sm text-red-600">{getErrorMessage(register.error)}</p>}
 
           <Button type="submit" variant="primary" className="w-full" disabled={register.isPending}>

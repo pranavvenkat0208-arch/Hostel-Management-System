@@ -6,6 +6,8 @@ export function useRooms(params?: { type?: string; availability?: string; search
   return useQuery({
     queryKey: ['rooms', params],
     queryFn: () => roomsApi.fetchRooms(params),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -13,6 +15,8 @@ export function useOccupancySummary() {
   return useQuery({
     queryKey: ['rooms', 'occupancy-summary'],
     queryFn: roomsApi.fetchOccupancySummary,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

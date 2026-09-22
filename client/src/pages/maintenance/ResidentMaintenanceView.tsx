@@ -6,10 +6,12 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
 import { PriorityBadge, MaintenanceStatusBadge } from '../../components/maintenance/StatusBadges';
 import { NewMaintenanceRequestModal } from '../../components/maintenance/NewMaintenanceRequestModal';
+import { MaintenanceDetailModal } from '../../components/maintenance/MaintenanceDetailModal';
 
 export function ResidentMaintenanceView() {
   const { data: requests, isLoading } = useMyMaintenanceRequests();
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | undefined>(undefined);
 
   return (
     <div className="space-y-6">
@@ -30,7 +32,11 @@ export function ResidentMaintenanceView() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {requests?.map((r) => (
-            <Card key={r._id}>
+            <Card
+              key={r._id}
+              onClick={() => setDetailId(r._id)}
+              className="cursor-pointer transition-colors hover:border-slate-300"
+            >
               <CardContent className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-slate-900">{r.title}</p>
@@ -52,6 +58,11 @@ export function ResidentMaintenanceView() {
       )}
 
       <NewMaintenanceRequestModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <MaintenanceDetailModal
+        open={Boolean(detailId)}
+        onClose={() => setDetailId(undefined)}
+        requestId={detailId}
+      />
     </div>
   );
 }

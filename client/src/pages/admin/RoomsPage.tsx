@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Wrench } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wrench, History } from 'lucide-react';
 import { useRooms, useOccupancySummary, useDeleteRoom, useUpdateRoom } from '../../hooks/useRooms';
+import { useAuthStore } from '../../store/authStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
 import { RoomFormModal } from '../../components/rooms/RoomFormModal';
+import { AllocationHistoryModal } from '../../components/rooms/AllocationHistoryModal';
 import type { Room } from '../../types';
 
 function OccupancyBadge({ room }: { room: Room }) {
@@ -26,6 +28,9 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 export function RoomsPage() {
+  // Room changes are admin only on the server, so hide them for staff.
+  const role = useAuthStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
   const { data: rooms, isLoading } = useRooms();
   const { data: summary } = useOccupancySummary();
   const deleteRoom = useDeleteRoom();
@@ -33,6 +38,7 @@ export function RoomsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [historyRoom, setHistoryRoom] = useState<Room | null>(null);
 
   function openAdd() {
     setEditingRoom(null);
@@ -61,9 +67,11 @@ export function RoomsPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Rooms</h1>
           <p className="text-sm text-slate-500">Manage room inventory and occupancy.</p>
         </div>
-        <Button variant="primary" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> Add room
-        </Button>
+        {isAdmin && (
+          <Button variant="primary" onClick={openAdd}>
+            <Plus className="h-4 w-4" /> Add room
+          </Button>
+        )}
       </div>
 
       {summary && (
@@ -109,20 +117,34 @@ export function RoomsPage() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1">
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleMaintenance(room)}
+                            title="Toggle maintenance"
+                          >
+                            <Wrench className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleMaintenance(room)}
-                          title="Toggle maintenance"
+                          onClick={() => setHistoryRoom(room)}
+                          title="Allocation history"
                         >
-                          <Wrench className="h-4 w-4" />
+                          <History className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(room)} title="Edit">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(room)} title="Delete">
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(room)} title="Edit">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(room)} title="Delete">
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -130,7 +152,7 @@ export function RoomsPage() {
                 {rooms?.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
-                      No rooms yet — add your first one.
+                      No rooms yet. Add your first one.
                     </td>
                   </tr>
                 )}
@@ -141,6 +163,12 @@ export function RoomsPage() {
       </Card>
 
       <RoomFormModal open={modalOpen} onClose={() => setModalOpen(false)} room={editingRoom} />
+      <AllocationHistoryModal
+        open={Boolean(historyRoom)}
+        onClose={() => setHistoryRoom(null)}
+        title={historyRoom ? `Room ${historyRoom.roomNumber} history` : 'Room history'}
+        roomId={historyRoom?._id}
+      />
     </div>
   );
 }

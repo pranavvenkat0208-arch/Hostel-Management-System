@@ -8,6 +8,7 @@ const userRoutes = require('./userRoutes');
 const invoiceRoutes = require('./invoiceRoutes');
 const reportRoutes = require('./reportRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const expenseRoutes = require('./expenseRoutes');
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/users', userRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/expenses', expenseRoutes);
 
 module.exports = router;
