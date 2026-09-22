@@ -4,9 +4,19 @@ A full-stack capstone project for managing a student hostel — room allocation,
 records, maintenance requests, billing, financial/occupancy reporting, and notifications,
 all behind role-based access for admins, staff, and residents.
 
-This is a from-scratch rewrite of an earlier hostel management project, built this time as
-a complete MERN application — a **JavaScript (Node.js/Express) API** paired with a
-**TypeScript React frontend**.
+
+## Demo credentials
+
+No need to register — these seeded accounts (password `Password123` for all of them) are
+ready to use on the live deployment or a local instance seeded with `npm run seed`:
+
+| Role     | Email                     | Password      |
+|----------|---------------------------|----------------|
+| Admin    | indira@hostel.test        | Password123    |
+| Staff    | bruce.wayne@hostel.test   | Password123    |
+| Staff    | clark.kent@hostel.test    | Password123    |
+| Resident | balaji@hostel.test        | Password123    |
+| Resident | prithvi@hostel.test       | Password123    |
 
 ## What this project is
 
@@ -162,8 +172,8 @@ To skip registering demo accounts by hand, `server/` also has a seed script that
 cd server && npm run seed
 ```
 
-All seeded accounts share the password `Password123` — see `server/src/utils/seed.js`
-for the exact emails, or just check the terminal output after running it.
+All seeded accounts share the password `Password123` — see *Demo credentials* above for
+the exact emails, or just check the terminal output after running it.
 
 ### Production build
 

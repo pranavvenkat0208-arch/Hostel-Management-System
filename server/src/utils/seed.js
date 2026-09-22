@@ -5,6 +5,10 @@ const { Resident } = require('../models/Resident');
 
 const SEED_PASSWORD = 'Password123';
 
+const adminSeeds = [
+  { name: 'Indira Rao', email: 'indira.rao@hostel.test', phone: '9800000005' },
+];
+
 const staffSeeds = [
   { name: 'Bruce Wayne', email: 'bruce.wayne@hostel.test', phone: '9800000001' },
   { name: 'Clark Kent', email: 'clark.kent@hostel.test', phone: '9800000002' },
@@ -18,6 +22,16 @@ const residentSeeds = [
 async function seed() {
   await mongoose.connect(env.MONGODB_URI);
   console.log('Connected to MongoDB — seeding demo accounts...\n');
+
+  for (const admin of adminSeeds) {
+    const existing = await User.findOne({ email: admin.email });
+    if (existing) {
+      console.log(`Skipped (already exists): ${admin.email}`);
+      continue;
+    }
+    await User.create({ ...admin, password: SEED_PASSWORD, role: 'admin' });
+    console.log(`Created admin:    ${admin.email}`);
+  }
 
   for (const staff of staffSeeds) {
     const existing = await User.findOne({ email: staff.email });
