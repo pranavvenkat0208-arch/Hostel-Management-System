@@ -18,6 +18,17 @@ export function useRegister() {
   });
 }
 
+// Pinged from the login/register pages so a sleeping server starts waking up
+// while the user is still typing.
+export function useServerHealth() {
+  return useQuery({
+    queryKey: ['server', 'health'],
+    queryFn: authApi.pingServer,
+    retry: 5,
+    staleTime: 5 * 60_000,
+  });
+}
+
 // Keeps the stored user (and role) in sync with the server. A deactivated
 // account gets a 401 here, which logs it out.
 export function useSyncCurrentUser() {

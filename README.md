@@ -422,6 +422,7 @@ All routes are under `/api`. Every route except register, login and health needs
 - Build the client with `VITE_API_URL` set to the deployed API, and serve `client/dist` with a fallback to `index.html` for all routes.
 - The server shuts down cleanly on `SIGTERM`: it finishes in-flight requests and closes the database connection.
 - Don't run `npm run seed` against the production database.
+- On a free Render plan the API sleeps after about 15 minutes idle. The login and register pages wake it automatically and show a "server is starting up" notice until it responds. To avoid the wait, point an uptime monitor (e.g. UptimeRobot) at `/api/health` every 10 minutes.
 
 ---
 

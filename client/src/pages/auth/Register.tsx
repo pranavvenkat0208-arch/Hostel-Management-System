@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 import { PhoneInput } from '../../components/ui/PhoneInput';
+import { ServerWakeNotice } from '../../components/layout/ServerWakeNotice';
 import { getErrorMessage } from '../../lib/utils';
 
 export function Register() {
@@ -22,7 +23,8 @@ export function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-10">
+      <ServerWakeNotice />
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">Create an account</h1>
         <p className="mt-1 text-sm text-slate-500">Register as a resident to access the hostel management system.</p>

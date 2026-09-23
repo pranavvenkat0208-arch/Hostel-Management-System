@@ -5,6 +5,7 @@ import { useLogin } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
+import { ServerWakeNotice } from '../../components/layout/ServerWakeNotice';
 import { getErrorMessage } from '../../lib/utils';
 
 export function Login() {
@@ -21,6 +22,7 @@ export function Login() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-sky-100 px-4">
       <h1 className="mb-6 text-2xl font-bold text-indigo-900">Wayne Towers Hostel Management System</h1>
+      <ServerWakeNotice />
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
         <h2 className="text-xl font-semibold text-slate-900">Welcome back</h2>
         <p className="mt-1 text-sm text-slate-500">Sign in to the hostel management system.</p>

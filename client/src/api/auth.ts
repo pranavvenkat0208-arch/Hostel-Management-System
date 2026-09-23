@@ -21,6 +21,12 @@ export async function login(input: LoginInput) {
   return res.data;
 }
 
+// Also wakes the API when the host has put it to sleep.
+export async function pingServer() {
+  await api.get('/health');
+  return true;
+}
+
 export async function fetchMe() {
   const res = await api.get<{ user: User }>('/auth/me');
   return res.data.user;
